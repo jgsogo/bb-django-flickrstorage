@@ -1,18 +1,11 @@
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 import httplib
 from urlparse import urlparse
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.base import File
 from django.core.files.storage import Storage
 
 from flickrhack import FlickrAPIhack
-
 
 class FlickrStorageException(Exception):
     pass
