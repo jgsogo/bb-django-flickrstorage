@@ -5,13 +5,24 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import Storage
 
-from flickrhack import FlickrAPIhack
+from .flickrhack import FlickrAPIhack
+
+
+IMAGE_TYPES = {
+    'square': 'Square',
+    'thumbnail': 'Thumbnail',
+    'small': 'Small',
+    'medium': 'Medium',
+    'large': 'Large'
+}
+
 
 class FlickrStorageException(Exception):
     pass
 
 
 class FlickrStorage(Storage):
+
     def __init__(self, options=None):
         self.options = {
             'cache': True,
@@ -57,10 +68,11 @@ class FlickrStorage(Storage):
     def exists(self, name):
         return False
 
-    def url(self, name):
+    def url(self, name, img_type=None):
         resp = self.flickr.photos_getSizes(photo_id=name)
         self._check_response(resp)
+        label = IMAGE_TYPES.get(img_type, 'Large')
         for size in resp.findall('sizes/size'):
-            if size.attrib['label'] == 'Large':  #original size
+            if size.attrib['label'] == label:
                 return size.attrib['source']
         raise FlickrStorageException, "Can't get URL"
