@@ -1,5 +1,4 @@
 from django.db.models.fields.files import ImageField, ImageFieldFile
-#from django.core.files.images import ImageFile
 from .flickr import FlickrStorage, IMAGE_TYPES
 
 __all__ = ['FlickrField']
@@ -21,9 +20,6 @@ class FlickrFieldFile(ImageFieldFile):
             return image
         else:
             return super(FlickrFieldFile, self).__getattr__(name)
-    
-    def save(self, *args, **kwargs):
-        super(FlickrFieldFile, self).save(*args, **kwargs)
 
 
 
