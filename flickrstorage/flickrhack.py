@@ -4,11 +4,10 @@ from flickrapi import make_utf8
 
 class FlickrAPIhack(FlickrAPI):
 
-    def __init__(self, api_key, secret=None, fail_on_error=None, username=None,
+    def __init__(self, api_key, secret=None, username=None,
             token=None, format='etree', store_token=True, cache=False):
-
-        FlickrAPI.__init__(self, api_key, secret, fail_on_error, username,
-            token, format, store_token, cache)
+        FlickrAPI.__init__(self, api_key, secret, username, token, format,\
+                           store_token, cache)
 
     def _FlickrAPI__upload_to_form(self, form_url, filename, fileobj, callback, **kwargs):
         '''
