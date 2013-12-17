@@ -63,6 +63,10 @@ class FlickrStorage(Storage):
         self._check_response(resp)
         name = resp.find('photoid').text
         content.close()
+        # Add to album
+        if self.options.get('photoset_id', None):
+            resp = self.flickr.photosets_addPhoto(photoset_id=self.options.get('photoset_id'), photo_id=name)
+            self._check_response(resp)
         return name
 
     def exists(self, name):
