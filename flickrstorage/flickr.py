@@ -23,7 +23,8 @@ class FlickrStorageException(Exception):
 
 class FlickrStorage(Storage):
 
-    def __init__(self, options=None):
+    def __init__(self, photoset_id=None, options=None):
+        self.photoset_id = photoset_id
         self.options = {
             'cache': True,
         }
@@ -63,9 +64,14 @@ class FlickrStorage(Storage):
         self._check_response(resp)
         name = resp.find('photoid').text
         content.close()
-        # Add to album
-        if self.options.get('photoset_id', None):
-            resp = self.flickr.photosets_addPhoto(photoset_id=self.options.get('photoset_id'), photo_id=name)
+        # Add to default album
+        photoset_id = self.options.get('photoset_id', None)
+        if photoset_id:
+            resp = self.flickr.photosets_addPhoto(photoset_id=photoset_id, photo_id=name)
+            self._check_response(resp)
+        # Add to album for this storage
+        if self.photoset_id:
+            resp = self.flickr.photosets_addPhoto(photoset_id=self.photoset_id, photo_id=name)
             self._check_response(resp)
         return name
 
