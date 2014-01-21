@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.core.files.storage import Storage
 
 from .flickrhack import FlickrAPIhack
+from flickrapi.exceptions import FlickrError
 
 
 IMAGE_TYPES = {
@@ -22,6 +23,7 @@ class FlickrStorageException(Exception):
 
 
 class FlickrStorage(Storage):
+    _ready = False
 
     def __init__(self, photoset_id=None, options=None):
         self.photoset_id = photoset_id
@@ -34,11 +36,20 @@ class FlickrStorage(Storage):
                                     cache=self.options['cache'])
         if self.options['cache']:
             self.flickr.cache = cache
-        (self.token, frob) = self.flickr.get_token_part_one(perms='delete')
+
         #TODO: move to management command
-        if not self.token:
-            raw_input('Press Enter...')
-        self.flickr.get_token_part_two((self.token, frob))
+        self._get_tokens()
+
+    def _get_tokens(self, perms='delete'):
+        try:
+            (self.token, frob) = self.flickr.get_token_part_one(perms=perms)
+            if not self.token:
+                raw_input('Press Enter...')
+            self.flickr.get_token_part_two((self.token, frob))
+            self._ready = True
+        except FlickrError:
+            self._ready
+        return self._ready
 
     def _check_response(self, resp):
         if resp.attrib['stat'] != 'ok':
@@ -46,7 +57,10 @@ class FlickrStorage(Storage):
             raise FlickrStorageException, "Error %s: %s" % (err.attrib['code'], err.attrib['msg'])
 
     def delete(self, name):
+        if not self._ready and not self._get_tokens():
+            raise FlickrStorageException, "Flickr service is not ready"
         resp = self.flickr.photos_delete(photo_id=name)
+
 
     def size(self, name):
         url = self.url(name)
@@ -58,6 +72,9 @@ class FlickrStorage(Storage):
         return fsize
 
     def _save(self, name, content):
+        if not self._ready and not self._get_tokens():
+            raise FlickrStorageException, "Flickr service is not ready"
+
         content.seek(0)             #ImageField read first 1024 bytes
         name = name.encode('utf-8')
         resp = self.flickr.upload(name, content.file)
@@ -79,6 +96,9 @@ class FlickrStorage(Storage):
         return False
 
     def url(self, name, img_type=None):
+        if not self._ready and not self._get_tokens():
+            raise FlickrStorageException, "Flickr service is not ready"
+
         resp = self.flickr.photos_getSizes(photo_id=name)
         self._check_response(resp)
         label = IMAGE_TYPES.get(img_type, 'Large')
