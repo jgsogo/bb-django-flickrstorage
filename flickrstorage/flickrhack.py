@@ -31,7 +31,7 @@ class FlickrAPIhack(FlickrAPI):
 
         if self.secret:
             kwargs["api_sig"] = self.sign(kwargs)
-        url = "http://%s%s" % (FlickrAPI.flickr_host, form_url)
+        url = "https://%s%s" % (FlickrAPI.flickr_host, form_url)
 
         # construct POST data
         body = Multipart()
