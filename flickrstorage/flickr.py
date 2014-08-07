@@ -9,13 +9,20 @@ from .flickrhack import FlickrAPIhack
 from flickrapi.exceptions import FlickrError
 
 
+# Flickr API doc: https://www.flickr.com/services/api/flickr.photos.getSizes.htm
 IMAGE_TYPES = {
     'square': 'Square',
+    'large_square': 'Large Square',
     'thumbnail': 'Thumbnail',
     'small': 'Small',
+    'small_320': 'Small 320',
     'medium': 'Medium',
-    'large': 'Large'
+    'medium_640': 'Medium 640',
+    'medium_800': 'Medium 800',
+    'large': 'Large',
+    'original': 'Original',
 }
+IMAGE_TYPE_DEFAULT = 'Small'
 
 
 class FlickrStorageException(Exception):
@@ -40,7 +47,7 @@ class FlickrStorage(Storage):
         #TODO: move to management command
         self._get_tokens()
 
-    def _get_tokens(self, perms='delete'):
+    def _get_tokens(self, perms='write'):
         try:
             (self.token, frob) = self.flickr.get_token_part_one(perms=perms)
             if not self.token:
@@ -101,7 +108,7 @@ class FlickrStorage(Storage):
 
         resp = self.flickr.photos_getSizes(photo_id=name)
         self._check_response(resp)
-        label = IMAGE_TYPES.get(img_type, 'Large')
+        label = IMAGE_TYPES.get(img_type, IMAGE_TYPE_DEFAULT)
         for size in resp.findall('sizes/size'):
             if size.attrib['label'] == label:
                 return size.attrib['source']
