@@ -102,14 +102,21 @@ class FlickrStorage(Storage):
     def exists(self, name):
         return False
 
-    def url(self, name, img_type=None):
+    def url(self, name, img_type=None, fallback_to_biggest=True):
         if not self._ready and not self._get_tokens():
             raise FlickrStorageException, "Flickr service is not ready"
 
         resp = self.flickr.photos_getSizes(photo_id=name)
         self._check_response(resp)
         label = IMAGE_TYPES.get(img_type, IMAGE_TYPE_DEFAULT)
+        biggest = None
         for size in resp.findall('sizes/size'):
+            if size.attrib['label'] != 'Original':
+                biggest = size
             if size.attrib['label'] == label:
                 return size.attrib['source']
+
+        if biggest!=None and fallback_to_biggest:
+            return biggest.attrib['source']
+
         raise FlickrStorageException, "Can't get URL"
