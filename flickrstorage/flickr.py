@@ -5,7 +5,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import Storage
 
-from .flickrhack import FlickrAPIhack
+#from .flickrhack import FlickrAPIhack
+from flickrapi import FlickrAPI as FlickrAPIhack
 from flickrapi.exceptions import FlickrError
 
 
@@ -39,21 +40,22 @@ class FlickrStorage(Storage):
         }
         self.options.update(options or settings.FLICKR_STORAGE_OPTIONS)
         self.flickr = FlickrAPIhack(self.options['api_key'],
-                                    self.options['api_secret'],
-                                    cache=self.options['cache'])
-        if self.options['cache']:
-            self.flickr.cache = cache
+                                    self.options['api_secret'])
+        #if self.options['cache']:
+        #    self.flickr.cache = cache
 
+	#self.flickr.token_cache.path = '.flickr'
         #TODO: move to management command
         self._get_tokens()
 
-    def _get_tokens(self, perms='write'):
+    def _get_tokens(self, perms=u'write'):
         try:
-            (self.token, frob) = self.flickr.get_token_part_one(perms=perms)
-            if not self.token:
-                raw_input('Press Enter...')
-            self.flickr.get_token_part_two((self.token, frob))
-            self._ready = True
+	    if not self.flickr.token_valid(perms=perms):
+		self.flickr.get_request_token(oauth_callback='oob')
+		authorize_url = self.flickr.auth_url(perms=perms)
+		verifier = unicode(raw_input('Verifier code for %s:'% authorize_url))
+		self.flickr.get_access_token(verifier)
+	        self._ready = True
         except FlickrError:
             self._ready
         return self._ready
@@ -103,7 +105,7 @@ class FlickrStorage(Storage):
         return False
 
     def url(self, name, img_type=None, fallback_to_biggest=True):
-        if not self._ready and not self._get_tokens():
+        if not self._ready and not self.flickr.token_valid(perms=u'read'):
             raise FlickrStorageException, "Flickr service is not ready"
 
         resp = self.flickr.photos_getSizes(photo_id=name)
