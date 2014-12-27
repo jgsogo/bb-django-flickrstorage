@@ -8,14 +8,15 @@ class ImageURL(object):
         self.url = url
 
 class FlickrFieldFile(ImageFieldFile):
+    _storage = FlickrStorage()
 
     def __init__(self, *args, **kwargs):
         super(FlickrFieldFile, self).__init__(*args, **kwargs)
-        self.storage = FlickrStorage()
+        self.storage = self._storage #FlickrStorage()
 
     def __getattr__(self, name):
         if name in IMAGE_TYPES:
-            img_url = self.storage.url(self.name, name)
+            img_url = self.storage.url(name=self.name, img_type=name)
             image = ImageURL(img_url)
             return image
         else:

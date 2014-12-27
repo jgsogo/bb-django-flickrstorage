@@ -50,12 +50,14 @@ class FlickrStorage(Storage):
 
     def _get_tokens(self, perms=u'write'):
         try:
-	    if not self.flickr.token_valid(perms=perms):
+	    if not self._ready and not self.flickr.token_valid(perms=perms):
 		self.flickr.get_request_token(oauth_callback='oob')
 		authorize_url = self.flickr.auth_url(perms=perms)
 		verifier = unicode(raw_input('Verifier code for %s:'% authorize_url))
 		self.flickr.get_access_token(verifier)
 	        self._ready = True
+            else:
+                self._ready = True
         except FlickrError:
             self._ready
         return self._ready
@@ -84,7 +86,7 @@ class FlickrStorage(Storage):
         if not self._ready and not self._get_tokens():
             raise FlickrStorageException, "Flickr service is not ready"
 
-        content.seek(0)             #ImageField read first 1024 bytes
+        #content.seek(0)             #ImageField read first 1024 bytes
         name = name.encode('utf-8')
         resp = self.flickr.upload(name, content.file)
         self._check_response(resp)
@@ -108,17 +110,17 @@ class FlickrStorage(Storage):
         if not self._ready and not self.flickr.token_valid(perms=u'read'):
             raise FlickrStorageException, "Flickr service is not ready"
 
-        resp = self.flickr.photos_getSizes(photo_id=name)
-        self._check_response(resp)
-        label = IMAGE_TYPES.get(img_type, IMAGE_TYPE_DEFAULT)
-        biggest = None
+	resp = self.flickr.photos_getSizes(photo_id=name)
+	self._check_response(resp)
+	label = IMAGE_TYPES.get(img_type, IMAGE_TYPE_DEFAULT)
+	biggest = None
         for size in resp.findall('sizes/size'):
             if size.attrib['label'] != 'Original':
                 biggest = size
             if size.attrib['label'] == label:
                 return size.attrib['source']
-
+	
         if biggest!=None and fallback_to_biggest:
             return biggest.attrib['source']
-
+	
         raise FlickrStorageException, "Can't get URL"
